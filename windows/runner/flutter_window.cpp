@@ -3,6 +3,10 @@
 #include <optional>
 
 #include "flutter/generated_plugin_registrant.h"
+#include <flutter/method_channel.h>
+#include <flutter/standard_method_codec.h>
+#include <map>
+#include <string>
 
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
     : project_(project) {}
@@ -25,6 +29,42 @@ bool FlutterWindow::OnCreate() {
     return false;
   }
   RegisterPlugins(flutter_controller_->engine());
+
+  // Setup UniControl System Bridge Method Channel
+  auto channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+      flutter_controller_->engine()->messenger(), "com.unicontrol.app/system_bridge",
+      &flutter::StandardMethodCodec::GetInstance());
+
+  channel->SetMethodCallHandler(
+      [](const flutter::MethodCall<flutter::EncodableValue>& call,
+         std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
+        if (call.method_name() == "executeCommand") {
+          std::string command = "";
+          if (const auto* map = std::get_if<flutter::EncodableMap>(call.arguments())) {
+             auto it = map->find(flutter::EncodableValue("command"));
+             if (it != map->end() && std::holds_alternative<std::string>(it->second)) {
+                 command = std::get<std::string>(it->second);
+             }
+          }
+
+          if (command == "getMetrics") {
+             // TODO: Call actual Windows APIs to get metrics
+             flutter::EncodableMap response;
+             response[flutter::EncodableValue("status")] = flutter::EncodableValue("success");
+             response[flutter::EncodableValue("os")] = flutter::EncodableValue("Windows");
+             response[flutter::EncodableValue("message")] = flutter::EncodableValue("Mocked Windows Metrics");
+             result->Success(response);
+          } else {
+             flutter::EncodableMap response;
+             response[flutter::EncodableValue("status")] = flutter::EncodableValue("error");
+             response[flutter::EncodableValue("message")] = flutter::EncodableValue("Unknown command");
+             result->Success(response);
+          }
+        } else {
+          result->NotImplemented();
+        }
+      });
+
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {

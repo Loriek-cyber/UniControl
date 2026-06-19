@@ -15,6 +15,7 @@ dependencies:
   device_info_plus: ^9.1.2
   uuid: ^4.5.3
   permission_handler: ^12.0.3
+  flutter_blue_plus: ^2.3.9
   # Add other dependencies here (e.g., flutter_riverpod, bloc, get_it, etc.)
 
 dev_dependencies:

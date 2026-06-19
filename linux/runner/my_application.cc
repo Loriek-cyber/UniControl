@@ -75,6 +75,37 @@ static void my_application_activate(GApplication* application) {
 
   fl_register_plugins(FL_PLUGIN_REGISTRY(view));
 
+  // Setup UniControl System Bridge
+  g_autoptr(FlStandardMethodCodec) codec = fl_standard_method_codec_new();
+  g_autoptr(FlMethodChannel) channel =
+      fl_method_channel_new(fl_engine_get_binary_messenger(fl_view_get_engine(view)),
+                            "com.unicontrol.app/system_bridge",
+                            FL_METHOD_CODEC(codec));
+
+  fl_method_channel_set_method_call_handler(
+      channel,
+      [](FlMethodChannel* channel, FlMethodCall* method_call,
+         gpointer user_data) {
+        const gchar* method = fl_method_call_get_name(method_call);
+
+        if (strcmp(method, "executeCommand") == 0) {
+          FlValue* args = fl_method_call_get_args(method_call);
+          // TODO: Parse args and execute actual Linux system commands
+          
+          g_autoptr(FlValue) result = fl_value_new_map();
+          fl_value_set_string_take(result, "status", fl_value_new_string("success"));
+          fl_value_set_string_take(result, "os", fl_value_new_string("Linux"));
+          fl_value_set_string_take(result, "message", fl_value_new_string("Mocked Linux Metrics"));
+          
+          g_autoptr(FlMethodResponse) response = FL_METHOD_RESPONSE(fl_method_success_response_new(result));
+          fl_method_call_respond(method_call, response, nullptr);
+        } else {
+          g_autoptr(FlMethodResponse) response = FL_METHOD_RESPONSE(fl_method_not_implemented_response_new());
+          fl_method_call_respond(method_call, response, nullptr);
+        }
+      },
+      nullptr, nullptr);
+
   gtk_widget_grab_focus(GTK_WIDGET(view));
 }
 
