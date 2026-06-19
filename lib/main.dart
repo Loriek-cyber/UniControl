@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'src/core/theme/app_theme.dart';
 import 'src/features/home/presentation/home_screen.dart';
+import 'src/features/permissions/presentation/permissions_wrapper.dart';
 import 'package:device_preview/device_preview.dart';
 
 void main() {
@@ -18,7 +19,9 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system, // Will switch based on system preferences
-      home: const HomeScreen(),
+      home: const PermissionsWrapper(
+        child: HomeScreen(),
+      ),
     );
   }
 }
