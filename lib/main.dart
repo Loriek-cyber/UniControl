@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'src/core/theme/app_theme.dart';
 import 'src/features/home/presentation/home_screen.dart';
+import 'package:device_preview/device_preview.dart';
 
 void main() {
   runApp(const MyApp());
