@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "dart-code.flutter",
+    "dart-code.dart-code",
+    "usernamehw.errorlens",
+    "aaron-bond.better-comments",
+    "jeroen-meijer.pubspec-assist",
+    "eamodio.gitlens"
+  ]
+}
