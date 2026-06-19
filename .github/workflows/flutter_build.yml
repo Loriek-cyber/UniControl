@@ -22,13 +22,12 @@ jobs:
         run: flutter create --org com.unicontrol --project-name uni_control --platforms android .
       - run: flutter pub get
       - run: flutter build apk --release
-      - run: flutter build appbundle --release
+      - name: Rename APK
+        run: cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/UniControl.apk
       - uses: actions/upload-artifact@v4
         with:
           name: android-release
-          path: |
-            build/app/outputs/flutter-apk/app-release.apk
-            build/app/outputs/bundle/release/app-release.aab
+          path: build/app/outputs/flutter-apk/UniControl.apk
 
   build-ios:
     name: Build iOS / iPadOS
@@ -42,12 +41,17 @@ jobs:
         run: flutter create --org com.unicontrol --project-name uni_control --platforms ios .
       - run: flutter pub get
       - run: flutter build ios --release --no-codesign
-      # Note: For IPA and App Store submission, you need provisioning profiles and certificates setup.
+      # Package the unsigned .app into an .ipa (Payload folder structure)
       # iPadOS uses the same iOS build — it runs natively on iPad via the same artifact.
+      - name: Create IPA from unsigned build
+        run: |
+          mkdir -p Payload
+          cp -r build/ios/iphoneos/Runner.app Payload/
+          zip -r UniControl.ipa Payload/
       - uses: actions/upload-artifact@v4
         with:
           name: ios-release
-          path: build/ios/iphoneos
+          path: UniControl.ipa
 
   build-windows:
     name: Build Windows
@@ -109,29 +113,25 @@ jobs:
         with:
           path: release-artifacts
 
-      - name: Package artifacts for release
+      - name: Rename and package artifacts for release
         run: |
-          cd release-artifacts
+          VERSION=${{ steps.version.outputs.version }}
 
-          # Zip Android artifacts
-          cd android-release
-          zip -r ../UniControl-${{ steps.version.outputs.version }}-android.zip .
-          cd ..
+          # Rename APK
+          mv release-artifacts/android-release/UniControl.apk release-artifacts/UniControl-${VERSION}.apk
 
-          # Zip iOS artifacts
-          cd ios-release
-          zip -r ../UniControl-${{ steps.version.outputs.version }}-ios.zip .
-          cd ..
+          # Rename IPA
+          mv release-artifacts/ios-release/UniControl.ipa release-artifacts/UniControl-${VERSION}.ipa
 
           # Zip Windows artifacts
-          cd windows-release
-          zip -r ../UniControl-${{ steps.version.outputs.version }}-windows.zip .
-          cd ..
+          cd release-artifacts/windows-release
+          zip -r ../UniControl-${VERSION}-windows.zip .
+          cd ../..
 
           # Zip Linux artifacts
-          cd linux-release
-          zip -r ../UniControl-${{ steps.version.outputs.version }}-linux.zip .
-          cd ..
+          cd release-artifacts/linux-release
+          zip -r ../UniControl-${VERSION}-linux.zip .
+          cd ../..
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -142,18 +142,20 @@ jobs:
             ## UniControl ${{ steps.version.outputs.version }}
 
             ### Downloads
-            - **Android** — APK + AAB (App Bundle)
-            - **iOS / iPadOS** — Unsigned build (requires code signing for distribution)
-            - **Windows** — Portable executable
-            - **Linux** — Release bundle
+            | Piattaforma | File | Note |
+            |---|---|---|
+            | **Android** | `UniControl-${{ steps.version.outputs.version }}.apk` | Installabile direttamente |
+            | **iOS / iPadOS** | `UniControl-${{ steps.version.outputs.version }}.ipa` | Unsigned — richiede re-signing per installazione |
+            | **Windows** | `UniControl-${{ steps.version.outputs.version }}-windows.zip` | Eseguibile portabile |
+            | **Linux** | `UniControl-${{ steps.version.outputs.version }}-linux.zip` | Release bundle |
 
             ---
-            *Automated release from commit ${{ github.sha }}*
+            *Release automatica dal commit ${{ github.sha }}*
           draft: false
           prerelease: false
           files: |
-            release-artifacts/UniControl-${{ steps.version.outputs.version }}-android.zip
-            release-artifacts/UniControl-${{ steps.version.outputs.version }}-ios.zip
+            release-artifacts/UniControl-${{ steps.version.outputs.version }}.apk
+            release-artifacts/UniControl-${{ steps.version.outputs.version }}.ipa
             release-artifacts/UniControl-${{ steps.version.outputs.version }}-windows.zip
             release-artifacts/UniControl-${{ steps.version.outputs.version }}-linux.zip
           generate_release_notes: true
