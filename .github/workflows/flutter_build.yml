@@ -15,6 +15,8 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+      - name: Generate platform scaffolding
+        run: flutter create --org com.unicontrol --project-name uni_control --platforms android .
       - run: flutter pub get
       - run: flutter build apk --release
       - run: flutter build appbundle --release
@@ -26,16 +28,19 @@ jobs:
             build/app/outputs/bundle/release/app-release.aab
 
   build-ios:
-    name: Build iOS
+    name: Build iOS / iPadOS
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+      - name: Generate platform scaffolding
+        run: flutter create --org com.unicontrol --project-name uni_control --platforms ios .
       - run: flutter pub get
       - run: flutter build ios --release --no-codesign
       # Note: For IPA and App Store submission, you need provisioning profiles and certificates setup.
+      # iPadOS uses the same iOS build — it runs natively on iPad via the same artifact.
       - uses: actions/upload-artifact@v4
         with:
           name: ios-release
@@ -49,6 +54,8 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+      - name: Generate platform scaffolding
+        run: flutter create --org com.unicontrol --project-name uni_control --platforms windows .
       - run: flutter pub get
       - run: flutter build windows --release
       - uses: actions/upload-artifact@v4
@@ -68,6 +75,8 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+      - name: Generate platform scaffolding
+        run: flutter create --org com.unicontrol --project-name uni_control --platforms linux .
       - run: flutter pub get
       - run: flutter build linux --release
       - uses: actions/upload-artifact@v4
