@@ -106,7 +106,7 @@ jobs:
           BUILD=$(grep '^version:' pubspec.yaml | sed 's/.*+//')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "build=$BUILD" >> $GITHUB_OUTPUT
-          echo "tag=v$VERSION+$BUILD" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION.$BUILD" >> $GITHUB_OUTPUT
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
