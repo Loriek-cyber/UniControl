@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ "main" ]
 
+permissions:
+  contents: write
+
 jobs:
   build-android:
     name: Build Android
@@ -83,3 +86,76 @@ jobs:
         with:
           name: linux-release
           path: build/linux/x64/release/bundle
+
+  create-release:
+    name: Create GitHub Release
+    needs: [build-android, build-ios, build-windows, build-linux]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version from pubspec.yaml
+        id: version
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
+          BUILD=$(grep '^version:' pubspec.yaml | sed 's/.*+//')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "build=$BUILD" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION+$BUILD" >> $GITHUB_OUTPUT
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Package artifacts for release
+        run: |
+          cd release-artifacts
+
+          # Zip Android artifacts
+          cd android-release
+          zip -r ../UniControl-${{ steps.version.outputs.version }}-android.zip .
+          cd ..
+
+          # Zip iOS artifacts
+          cd ios-release
+          zip -r ../UniControl-${{ steps.version.outputs.version }}-ios.zip .
+          cd ..
+
+          # Zip Windows artifacts
+          cd windows-release
+          zip -r ../UniControl-${{ steps.version.outputs.version }}-windows.zip .
+          cd ..
+
+          # Zip Linux artifacts
+          cd linux-release
+          zip -r ../UniControl-${{ steps.version.outputs.version }}-linux.zip .
+          cd ..
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: UniControl ${{ steps.version.outputs.version }}
+          body: |
+            ## UniControl ${{ steps.version.outputs.version }}
+
+            ### Downloads
+            - **Android** — APK + AAB (App Bundle)
+            - **iOS / iPadOS** — Unsigned build (requires code signing for distribution)
+            - **Windows** — Portable executable
+            - **Linux** — Release bundle
+
+            ---
+            *Automated release from commit ${{ github.sha }}*
+          draft: false
+          prerelease: false
+          files: |
+            release-artifacts/UniControl-${{ steps.version.outputs.version }}-android.zip
+            release-artifacts/UniControl-${{ steps.version.outputs.version }}-ios.zip
+            release-artifacts/UniControl-${{ steps.version.outputs.version }}-windows.zip
+            release-artifacts/UniControl-${{ steps.version.outputs.version }}-linux.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
